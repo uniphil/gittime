@@ -91,9 +91,7 @@ class T(object):
 
     @staticmethod
     def nice_timedelta(delta_obj):
-        if delta_obj is None:
-            return 'first commit'
-        elif delta_obj < timedelta(seconds=48):
+        if delta_obj < timedelta(seconds=48):
             return '{}s'.format(delta_obj.seconds)
         elif delta_obj < timedelta(minutes=48):
             minutes = float(delta_obj.seconds) / timedelta(minutes=1).seconds
@@ -111,20 +109,44 @@ class T(object):
         return template.format(plus=plus, minus=minus, filename=filename)
 
     @staticmethod
-    def commit_summary(sha1, title, when, author, total_plus, total_minus,
-                       changes_by_file):
+    def commit_summary(running_total, sha1, title, when, author,
+                       total_plus, total_minus, changes_by_file):
+        prepender = "\nRunning total: {total}\n\n".format(total=running_total)
         template = ("{sha1} {title}\n"
                     "{when} by {author}\n"
                     "Total line changes: +{plus} -{minus}\n"
                       "{changes_by_file}\n")
         changes = '\n'.join(map(T.file_change, changes_by_file))
-        return template.format(sha1=sha1[:7],
-                               title=title,
-                               when=T.nice_time(when),
-                               author=author,
-                               plus=total_plus,
-                               minus=total_minus,
-                               changes_by_file=T.indent(changes))
+        details = template.format(sha1=sha1[:7],
+                                  title=title,
+                                  when=T.nice_time(when),
+                                  author=author,
+                                  plus=total_plus,
+                                  minus=total_minus,
+                                  changes_by_file=T.indent(changes))
+        return prepender + T.bullet(details)
+
+    @staticmethod
+    def prompt(suggestion):
+        template = 'Estimate hours spent{default}: '
+        if suggestion is not None:
+            nice_time = T.nice_timedelta(suggestion)
+            default = ' [{suggestion}]'.format(suggestion=nice_time)
+        else:
+            default = ''
+        return template.format(default=default)
+
+    @staticmethod
+    def cant_guess_initial():
+        template = ('Input required: Since this is the initial commit, all '
+                    'bets are off for how long it took. Make a guess.')
+        return T.bullet(template.format())
+
+    @staticmethod
+    def input_error(bad_value):
+        template = ('Input error: "{}" doesn\'t look like a number and I\'m '
+                    'just a computer :(')
+        return T.bullet(template.format(bad_value))
 
 
 def get_changes(diff):
@@ -140,7 +162,7 @@ def get_changes(diff):
     return total_adds, total_deletes, changes_by_file
 
 
-def summarize(repo, commit, previous=None):
+def summarize(total, repo, commit, previous):
     commit_time = datetime.fromtimestamp(commit.commit_time)
     if previous is not None:
         prev_commit_time = datetime.fromtimestamp(previous.commit_time)
@@ -156,6 +178,7 @@ def summarize(repo, commit, previous=None):
     total_plus, total_minus, changes_by_file = changes
 
     summary = T.commit_summary(
+        running_total=total,
         sha1=commit.hex,
         title=commit.message.splitlines()[0],
         when=commit_time,
@@ -164,22 +187,25 @@ def summarize(repo, commit, previous=None):
         total_minus=total_minus,
         changes_by_file=changes_by_file,
     )
-    return T.bullet(summary), time_since_last_commit
+    return summary, time_since_last_commit
 
 
 def get_estimate(suggestion):
-    prompt = 'Estimate hours spent [{}]: '.format(T.nice_timedelta(suggestion))
     while True:
-        raw_estimate = input(prompt)
-        if raw_estimate == '':
+        raw_estimate = input(T.prompt(suggestion))
+        if raw_estimate == '' and suggestion is not None:
             estimate = suggestion
             break
+        if raw_estimate == '' and suggestion is None:
+            print(T.cant_guess_initial())
+            continue
         try:
             estimated_hours = float(raw_estimate)
+        except ValueError as e:
+            print(T.input_error(raw_estimate))
+        else:
             estimate = timedelta(hours=estimated_hours)
             break
-        except ValueError:
-            print('Parse error: enter an estimated number of hours')
     return estimate
 
 
@@ -206,16 +232,15 @@ def user_range_walker(repo, start, end, author_email):
 
 
 def estimate(repo, start=None, end=None, author_email=None):
-    estimated_total = timedelta(seconds=0)
+    total = timedelta(seconds=0)
 
     for commit in user_range_walker(repo, start, end, author_email):
         previous_commit = None if commit.parents == [] else commit.parents[0]
-        summary, suggestion = summarize(repo, commit, previous=previous_commit)
+        summary, suggestion = summarize(total, repo, commit, previous_commit)
         print(summary, end='\n\n')
-        estimated_total += get_estimate(suggestion)
-        print('Estimated total: {}'.format(estimated_total), end='\n\n')
+        total += get_estimate(suggestion)
 
-    return estimated_total
+    return total
 
 
 if __name__ == '__main__':
