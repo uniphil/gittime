@@ -106,12 +106,11 @@ class T(object):
 
     @staticmethod
     def commit_summary(sha1, title, when, author, total_plus, total_minus,
-                       changes_by_file, time_since):
+                       changes_by_file):
         template = ("{sha1} {title}\n"
                     "{when} by {author}\n"
                     "Total line changes: +{plus} -{minus}\n"
-                      "{changes_by_file}\n"
-                    "Time since previous commit: {time_since}")
+                      "{changes_by_file}\n")
         changes = '\n'.join(map(T.file_change, changes_by_file))
         return template.format(sha1=sha1[:7],
                                title=title,
@@ -119,8 +118,7 @@ class T(object):
                                author=author,
                                plus=total_plus,
                                minus=total_minus,
-                               changes_by_file=T.indent(changes),
-                               time_since=T.nice_timedelta(time_since))
+                               changes_by_file=T.indent(changes))
 
 
 def get_changes(diff):
@@ -158,7 +156,6 @@ def summarize(repo, commit, previous=None):
         total_plus=total_plus,
         total_minus=total_minus,
         changes_by_file=changes_by_file,
-        time_since=time_since_last_commit,
     )
     return T.bullet(summary), time_since_last_commit
 
