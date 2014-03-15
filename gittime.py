@@ -255,8 +255,8 @@ if __name__ == '__main__':
     parser.add_argument('url', help='repository clone URL or local path')
     parser.add_argument('start', nargs='?', help='revision to start from, like HEAD~10 or d7c7c04')
     parser.add_argument('end', nargs='?', help='stop at this revision, like HEAD~2 or 8dfa01d')
-    parser.add_argument('-u', '--user', metavar='email', help='only suggest commits authored by this email address')
+    parser.add_argument('-a', '--author', metavar='email', help='only suggest commits authored by this email address')
     args = parser.parse_args()
     with TempRepo(args.url) as repo:
-        estimated_total = estimate(repo, args.start, args.end, args.user)
+        estimated_total = estimate(repo, args.start, args.end, args.author)
     print(T.estimated_total(estimated_total))
