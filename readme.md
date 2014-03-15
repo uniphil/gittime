@@ -23,7 +23,7 @@ Usage
 
 ```bash
 $ ./gittime.py --help
-usage: gittime.py [-h] [-u email] url [start] [end]
+usage: gittime.py [-h] [-a email] url [start] [end]
 
 Estimate programming time with prompts of git metadata.
 
@@ -34,7 +34,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -u email, --user email
+  -a email, --author email
                         only suggest commits authored by this email address
 ```
 
@@ -42,8 +42,8 @@ optional arguments:
 ### Example
 
 ```bash
-$ ./gittime.py https://github.com/uniphil/commit--blog.git HEAD~3 HEAD~2 -u uniphil@gmail.com
-cloning https://github.com/uniphil/commit--blog.git...
+$ ./gittime.py ~/code/commitblog HEAD~3 HEAD~2 --author uniphil@gmail.com
+cloning /home/phil/code/commitblog...
 
 
 Running total: 0:00:00
