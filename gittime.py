@@ -160,15 +160,39 @@ def summarize(repo, commit, previous=None):
         changes_by_file=changes_by_file,
         time_since=time_since_last_commit,
     )
-    return T.bullet(summary)
+    return T.bullet(summary), time_since_last_commit
+
+
+def get_estimate(suggestion):
+    prompt = 'Estimate hours spent [{}]: '.format(T.nice_timedelta(suggestion))
+    while True:
+        try:
+            raw_estimate = input(prompt)
+        except SyntaxError:
+            estimate = suggestion
+            break
+        try:
+            estimated_hours = float(raw_estimate)
+            estimate = timedelta(hours=estimated_hours)
+            break
+        except ValueError:
+            print('Parse error: enter an estimated number of hours')
+    return estimate
+
 
 
 def estimate(repo):
-    chronological = GIT_SORT_TIME|GIT_SORT_REVERSE
+    estimated_total = timedelta(seconds=0)
+    chronological = GIT_SORT_TIME | GIT_SORT_REVERSE
     for commit in repo.walk(repo.head.target, chronological):
         previous_commit = None if commit.parents == [] else commit.parents[0]
-        summary = summarize(repo, commit, previous=previous_commit)
+        summary, suggestion = summarize(repo, commit, previous=previous_commit)
+
         print(summary, end='\n\n')
+
+        estimated_total += get_estimate(suggestion)
+        print('Estimated total: {}'.format(estimated_total), end='\n\n')
+    return estimated_total
 
 
 if __name__ == '__main__':
@@ -177,5 +201,5 @@ if __name__ == '__main__':
     parser.add_argument('url', help='repository clone URL or local path')
     args = parser.parse_args()
     with TempRepo(args.url) as repo:
-        time_info = estimate(repo)
-    print(time_info)
+        estimated_total = estimate(repo)
+    print(estimated_total)
