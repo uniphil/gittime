@@ -19,7 +19,7 @@
 
 
     :copyright: (c) 2014 by Phil Schleihauf.
-    :licence: MPL, see LICENSE for more details.
+    :licence: MIT, see LICENSE for more details.
 """
 
 from __future__ import print_function
