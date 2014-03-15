@@ -29,6 +29,7 @@ from tempfile import mkdtemp
 from datetime import datetime, timedelta
 
 from pygit2 import clone_repository
+from pygit2 import GIT_SORT_TIME, GIT_SORT_REVERSE
 
 
 class TempRepo(object):
@@ -40,8 +41,8 @@ class TempRepo(object):
     def __enter__(self):
         self.path = mkdtemp()
         try:
+            print('cloning {}... '.format(self.url), end='\n\n')
             repo = clone_repository(self.url, self.path, bare=True)
-            print('cloning {} to {}...'.format(self.url, self.path))
         except Exception as e:
             self.__exit__()  # make sure the temp directory gets cleaned up
             raise e
@@ -105,13 +106,13 @@ class T(object):
 
     @staticmethod
     def commit_summary(sha1, title, when, author, total_plus, total_minus,
-                       by_file, time_since):
+                       changes_by_file, time_since):
         template = ("{sha1} {title}\n"
                     "{when} by {author}\n"
                     "Total line changes: +{plus} -{minus}\n"
                       "{changes_by_file}\n"
                     "Time since previous commit: {time_since}")
-        changes = '\n'.join(map(T.file_change, by_file))
+        changes = '\n'.join(map(T.file_change, changes_by_file))
         return template.format(sha1=sha1[:7],
                                title=title,
                                when=T.nice_time(when),
@@ -122,24 +123,38 @@ class T(object):
                                time_since=T.nice_timedelta(time_since))
 
 
-
-def summarize(commit):
-    when = datetime.now()
-    since = timedelta(minutes=18)
+def summarize(commit, previous=None):
+    when = datetime.fromtimestamp(commit.commit_time)
+    if previous is not None:
+        since = when - previous
+    else:
+        since = None
+    summary = T.commit_summary(
+        sha1=commit.hex,
+        title=commit.message.splitlines()[0],
+        when=when,
+        author=commit.author.email,
+        total_plus=0,
+        total_minus=0,
+        changes_by_file=[],
+        time_since=since,
+    )
     changes = [
         ('some_file.txt', 2, 20),
         ('file1.jpg', 5, 0),
     ]
-    summary = T.commit_summary('asdf', 'Hello', when, 'uniphil@gmail.com',
-                                21, 2, changes, since)
     return T.bullet(summary)
 
 
 def estimate(repo):
-    print()
-    print(summarize('asdf'))
-    print()
-
+    for commit in repo.walk(repo.head.target,
+                            GIT_SORT_TIME | GIT_SORT_REVERSE):
+        if commit.parents != []:
+            previous_commit = commit.parents[0]
+            previous_time = datetime.fromtimestamp(previous_commit.commit_time)
+        else:
+            previous_time = None
+        print(summarize(commit, previous=previous_time), end='\n\n')
 
 
 if __name__ == '__main__':
