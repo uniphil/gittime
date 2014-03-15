@@ -29,6 +29,7 @@ $ ./gittime <repository> [<tree-ish first> [<tree-ish last>]] [-u <email>]
 
 ```
 $ ./gittime git@github.com:uniphil/commit--blog.git
+cloning to temporary repo...
 
 * ff228dc initial sketch with github oauth
   Sunday, Feb 16, 2:13pm by uniphil@gmail.com
@@ -52,3 +53,6 @@ Estimate time spent[1m]:
 
 ... and so on
 ```
+
+gittime will set the default time estimate to the timedelta since the last
+commit. It's not smart. You're smart. Think while using this.
