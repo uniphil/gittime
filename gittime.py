@@ -130,6 +130,7 @@ def get_changes(diff):
         total_deletes += patch.deletions
         change = (patch.new_file_path, patch.additions, patch.deletions)
         changes_by_file.append(change)
+    changes_by_file = sorted(changes_by_file, key=lambda x: -sum(x[1:]))
     return total_adds, total_deletes, changes_by_file
 
 
