@@ -123,38 +123,52 @@ class T(object):
                                time_since=T.nice_timedelta(time_since))
 
 
-def summarize(commit, previous=None):
+def get_changes(diff):
+    total_adds = 0
+    total_deletes = 0
+    changes_by_file = []
+    for patch in diff:
+        total_adds += patch.additions
+        total_deletes += patch.deletions
+        change = (patch.new_file_path, patch.additions, patch.deletions)
+        changes_by_file.append(change)
+    return total_adds, total_deletes, changes_by_file
+
+
+def summarize(repo, commit, previous=None):
     when = datetime.fromtimestamp(commit.commit_time)
     if previous is not None:
-        since = when - previous
+        prev_when = datetime.fromtimestamp(previous.commit_time)
+        since = when - prev_when
+        diff = previous.tree.diff_to_tree(commit.tree)
     else:
         since = None
+        empty_tree_oid = repo.TreeBuilder().write()
+        empty_tree = repo.get(empty_tree_oid)
+        diff = empty_tree.diff_to_tree(commit.tree)
+
+    changes = get_changes(diff)
+    total_plus, total_minus, changes_by_file = changes
+
     summary = T.commit_summary(
         sha1=commit.hex,
         title=commit.message.splitlines()[0],
         when=when,
         author=commit.author.email,
-        total_plus=0,
-        total_minus=0,
-        changes_by_file=[],
+        total_plus=total_plus,
+        total_minus=total_minus,
+        changes_by_file=changes_by_file,
         time_since=since,
     )
-    changes = [
-        ('some_file.txt', 2, 20),
-        ('file1.jpg', 5, 0),
-    ]
     return T.bullet(summary)
 
 
 def estimate(repo):
-    for commit in repo.walk(repo.head.target,
-                            GIT_SORT_TIME | GIT_SORT_REVERSE):
-        if commit.parents != []:
-            previous_commit = commit.parents[0]
-            previous_time = datetime.fromtimestamp(previous_commit.commit_time)
-        else:
-            previous_time = None
-        print(summarize(commit, previous=previous_time), end='\n\n')
+    chronological = GIT_SORT_TIME|GIT_SORT_REVERSE
+    for commit in repo.walk(repo.head.target, chronological):
+        previous_commit = None if commit.parents == [] else commit.parents[0]
+        summary = summarize(repo, commit, previous=previous_commit)
+        print(summary, end='\n\n')
 
 
 if __name__ == '__main__':
