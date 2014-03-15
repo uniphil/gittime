@@ -136,13 +136,13 @@ def get_changes(diff):
 
 
 def summarize(repo, commit, previous=None):
-    when = datetime.fromtimestamp(commit.commit_time)
+    commit_time = datetime.fromtimestamp(commit.commit_time)
     if previous is not None:
-        prev_when = datetime.fromtimestamp(previous.commit_time)
-        since = when - prev_when
+        prev_commit_time = datetime.fromtimestamp(previous.commit_time)
+        time_since_last_commit = commit_time - prev_commit_time
         diff = previous.tree.diff_to_tree(commit.tree)
     else:
-        since = None
+        time_since_last_commit = None
         empty_tree_oid = repo.TreeBuilder().write()
         empty_tree = repo.get(empty_tree_oid)
         diff = empty_tree.diff_to_tree(commit.tree)
@@ -153,12 +153,12 @@ def summarize(repo, commit, previous=None):
     summary = T.commit_summary(
         sha1=commit.hex,
         title=commit.message.splitlines()[0],
-        when=when,
+        when=commit_time,
         author=commit.author.email,
         total_plus=total_plus,
         total_minus=total_minus,
         changes_by_file=changes_by_file,
-        time_since=since,
+        time_since=time_since_last_commit,
     )
     return T.bullet(summary)
 
