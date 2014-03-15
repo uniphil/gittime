@@ -92,7 +92,7 @@ class T(object):
     @staticmethod
     def nice_timedelta(delta_obj):
         if delta_obj is None:
-            return 'undefined'
+            return 'first commit'
         elif delta_obj < timedelta(seconds=48):
             return '{}s'.format(delta_obj.seconds)
         elif delta_obj < timedelta(minutes=48):
@@ -183,26 +183,50 @@ def get_estimate(suggestion):
     return estimate
 
 
-
-def estimate(repo):
-    estimated_total = timedelta(seconds=0)
+def user_range_walker(repo, start, end, author_email):
+    start_marker = None
+    fast_forwarding = None
+    if start is not None:
+        start_oid_marker = repo.revparse_single(start).oid
+        fast_forwarding = True
+    if end is not None:
+        end_oid = repo.revparse_single(end).oid
+    else:
+        end_oid = repo.head.target
     chronological = GIT_SORT_TIME | GIT_SORT_REVERSE
-    for commit in repo.walk(repo.head.target, chronological):
+    for commit in repo.walk(end_oid, chronological):
+        if fast_forwarding:
+            if commit.oid == start_oid_marker:
+                fast_forwarding = False
+            else:
+                continue
+        if author_email is not None and commit.author.email != author_email:
+            continue
+        yield commit
+
+
+def estimate(repo, start=None, end=None, author_email=None):
+    estimated_total = timedelta(seconds=0)
+
+    for commit in user_range_walker(repo, start, end, author_email):
         previous_commit = None if commit.parents == [] else commit.parents[0]
         summary, suggestion = summarize(repo, commit, previous=previous_commit)
-
         print(summary, end='\n\n')
-
         estimated_total += get_estimate(suggestion)
         print('Estimated total: {}'.format(estimated_total), end='\n\n')
+
     return estimated_total
 
 
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser(description='Estimate programming time.')
+    parser = argparse.ArgumentParser(
+        description='Estimate programming time with prompts of git metadata.')
     parser.add_argument('url', help='repository clone URL or local path')
+    parser.add_argument('start', nargs='?', help='revision to start from, like HEAD~10 or d7c7c04')
+    parser.add_argument('end', nargs='?', help='stop at this revision, like HEAD~2 or 8dfa01d')
+    parser.add_argument('-u', '--user', metavar='email', help='only suggest commits authored by this email address')
     args = parser.parse_args()
     with TempRepo(args.url) as repo:
-        estimated_total = estimate(repo)
+        estimated_total = estimate(repo, args.start, args.end, args.user)
     print(estimated_total)
