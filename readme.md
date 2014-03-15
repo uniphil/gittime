@@ -1,7 +1,7 @@
 Git Time
 ========
 
-Estimate time spent programming with git metadata. Gittime shows u metadata.
+Estimate time spent programming with git metadata. Gittime shows you metadata.
 You make guesses.
 
 UI cues taken from [acoomans](https://github.com/acoomans)'s similarly named
@@ -21,11 +21,18 @@ may become a several-off) for myself to come up with some hours on some projects
 Usage
 -----
 
+**Note:** this example is currently aspirational -- the optional arguments don't
+actually exist yet.
+
 ```bash
 $ ./gittime <repository> [<tree-ish first> [<tree-ish last>]] [-u <email>]
 ```
 
+
 ### Example
+
+**Note:** as above, this is more of a design spec than what you get (though in
+it's currently close).
 
 ```
 $ ./gittime git@github.com:uniphil/commit--blog.git
