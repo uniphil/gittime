@@ -32,6 +32,12 @@ from pygit2 import clone_repository
 from pygit2 import GIT_SORT_TIME, GIT_SORT_REVERSE
 
 
+try:
+    input = raw_input
+except NameError:
+    pass  # python3
+
+
 class TempRepo(object):
     """Make a bare repository in a directory for safe isolated inspection."""
 
@@ -164,9 +170,8 @@ def summarize(repo, commit, previous=None):
 def get_estimate(suggestion):
     prompt = 'Estimate hours spent [{}]: '.format(T.nice_timedelta(suggestion))
     while True:
-        try:
-            raw_estimate = input(prompt)
-        except SyntaxError:
+        raw_estimate = input(prompt)
+        if raw_estimate == '':
             estimate = suggestion
             break
         try:
