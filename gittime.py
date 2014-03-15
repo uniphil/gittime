@@ -137,6 +137,11 @@ class T(object):
         return template.format(default=default)
 
     @staticmethod
+    def estimated_total(total_delta):
+        template = '\n\nTotal estimated time: {total}'
+        return template.format(total=total_delta)
+
+    @staticmethod
     def cant_guess_initial():
         template = ('Input required: Since this is the initial commit, all '
                     'bets are off for how long it took. Make a guess.')
@@ -254,4 +259,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     with TempRepo(args.url) as repo:
         estimated_total = estimate(repo, args.start, args.end, args.user)
-    print(estimated_total)
+    print(T.estimated_total(estimated_total))

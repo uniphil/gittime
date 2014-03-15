@@ -21,44 +21,55 @@ may become a several-off) for myself to come up with some hours on some projects
 Usage
 -----
 
-**Note:** this example is currently aspirational -- the optional arguments don't
-actually exist yet.
-
 ```bash
-$ ./gittime <repository> [<tree-ish first> [<tree-ish last>]] [-u <email>]
+$ ./gittime.py --help
+usage: gittime.py [-h] [-u email] url [start] [end]
+
+Estimate programming time with prompts of git metadata.
+
+positional arguments:
+  url                   repository clone URL or local path
+  start                 revision to start from, like HEAD~10 or d7c7c04
+  end                   stop at this revision, like HEAD~2 or 8dfa01d
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u email, --user email
+                        only suggest commits authored by this email address
 ```
 
 
 ### Example
 
-**Note:** as above, this is more of a design spec than what you get (though in
-it's currently close).
+```bash
+$ ./gittime.py https://github.com/uniphil/commit--blog.git HEAD~3 HEAD~2 -u uniphil@gmail.com
+cloning https://github.com/uniphil/commit--blog.git...
 
-```
-$ ./gittime git@github.com:uniphil/commit--blog.git
-cloning to temporary repo...
 
-* ff228dc initial sketch with github oauth
-  Sunday, Feb 16, 2:13pm by uniphil@gmail.com
-  Total line changes: +166 -0.
-    +127 commitblog.py
-    +24 manage.py
-    +11 dev-requirements.txt
-    +4 .gitignore
-  Time since previous commit: (n/a; first commit)
-  
-Estimate time spent: 3h
+Running total: 0:00:00
 
-* 7da8a0a Add requirements for production
-  Sunday, Feb 16, 2:14pm by uniphil@gmail.com
-  Total line changes: +11 -3
-    +11 requirements.txt
-    -3 dev-requirements.txt
-  Time since previous commit 1m
+* 9312708 Add a 404 page (fix #22)
+  Friday, Mar 14 at 00:52:35 by uniphil@gmail.com
+  Total line changes: +44 -1
+    +25 -0 templates/not-found.html
+    +12 -1 static/css/main.css
+    +7 -0 commitblog.py
 
-Estimate time spent[1m]:
+Estimate hours spent [29m]: 
 
-... and so on
+Running total: 0:29:08
+
+* 4bf2fd4 rename blog-commit to blog-post
+  Friday, Mar 14 at 00:53:08 by uniphil@gmail.com
+  Total line changes: +26 -26
+    +0 -25 templates/blog-commit.html
+    +25 -0 templates/blog-post.html
+    +1 -1 commitblog.py
+
+Estimate hours spent [33s]: .5
+
+
+Total estimated time: 0:59:08
 ```
 
 gittime will set the default time estimate to the timedelta since the last
